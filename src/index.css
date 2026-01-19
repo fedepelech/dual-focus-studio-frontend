@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+:root {
+  --primary-color: #e4d0bb;
+  --secondary-color: #1e3a5f;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom styles that complement Mantine and Tailwind */
+.bg-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}

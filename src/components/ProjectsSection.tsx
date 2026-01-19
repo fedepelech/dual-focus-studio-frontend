@@ -1,0 +1,69 @@
+import React from 'react';
+
+
+interface PortfolioImage {
+  id: string;
+  filename: string;
+  caption?: string;
+}
+
+interface PortfolioProject {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  images: PortfolioImage[];
+}
+
+interface ProjectsSectionProps {
+  portfolio: PortfolioProject[];
+  onProjectClick: (project: PortfolioProject) => void;
+  uploadsUrl: string;
+}
+
+const ProjectsSection: React.FC<ProjectsSectionProps> = ({ portfolio, onProjectClick, uploadsUrl }) => {
+  if (portfolio.length === 0) return null;
+
+  return (
+    <div id="proyectos" className="bg-white py-20 px-6 md:px-20">
+      <div className="text-center mb-16">
+        <h2 className="text-3xl font-bold text-[#1c304a] mb-4">Trabajos Realizados</h2>
+        <p className="text-gray-500 max-w-2xl mx-auto">Una muestra de nuestra calidad y profesionalismo.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {portfolio.map((project) => (
+          <div key={project.id} className="group cursor-pointer" onClick={() => onProjectClick(project)}>
+            <div className="overflow-hidden rounded-2xl mb-6 aspect-[4/3] bg-gray-100">
+              {project.images.length > 0 ? (
+                <img
+                  src={`${uploadsUrl}/${project.images[0].filename}`}
+                  alt={project.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  Sin imágenes
+                </div>
+              )}
+            </div>
+            <h3 className="text-xl font-bold text-[#1c304a] mb-1">{project.title}</h3>
+            {project.description && <p className="text-gray-500 text-sm mb-4 line-clamp-2">{project.description}</p>}
+            <div className="flex gap-2">
+              {project.category && (
+                <span className="bg-[#f2e7d5] text-[#1c304a] px-3 py-1 rounded text-[10px] font-bold tracking-wider uppercase">
+                  {project.category}
+                </span>
+              )}
+              <span className="bg-[#f2e7d5] text-[#1c304a] px-3 py-1 rounded text-[10px] font-bold tracking-wider uppercase">
+                {project.images.length} FOTO(S)
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default ProjectsSection;
