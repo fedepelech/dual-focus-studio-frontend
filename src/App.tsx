@@ -10,6 +10,7 @@ import { QuestionsManager } from './pages/admin/QuestionsManager';
 import { PortfolioManager } from './pages/admin/PortfolioManager';
 import { OrdersManager } from './pages/admin/OrdersManager';
 import api from './api/axios';
+import { UPLOADS_URL } from './config/env';
 
 // Importar nuevos componentes de diseño
 import Navbar from './components/Navbar';
@@ -40,8 +41,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// URL base para las imágenes
-const UPLOADS_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '/uploads');
 
 function HomePage() {
   const formRef = useRef<HTMLDivElement>(null);

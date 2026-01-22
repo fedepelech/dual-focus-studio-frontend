@@ -22,6 +22,7 @@ import {
 } from '@mantine/core';
 import { Plus, Trash, Upload, ImagePlus } from 'lucide-react';
 import api from '../../api/axios';
+import { UPLOADS_URL } from '../../config/env';
 
 interface PortfolioImage {
   id: string;
@@ -38,7 +39,6 @@ interface PortfolioProject {
   images: PortfolioImage[];
 }
 
-const UPLOADS_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '/uploads');
 
 export function PortfolioManager() {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
