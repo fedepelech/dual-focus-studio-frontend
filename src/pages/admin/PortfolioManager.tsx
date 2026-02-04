@@ -27,6 +27,7 @@ import { UPLOADS_URL } from '../../config/env';
 interface PortfolioImage {
   id: string;
   filename: string;
+  url: string;
   caption?: string;
   displayOrder: number;
 }
@@ -218,7 +219,7 @@ export function PortfolioManager() {
                   <Card key={img.id} padding="xs" withBorder>
                     <Card.Section>
                       <Image
-                        src={`${UPLOADS_URL}/${img.filename}`}
+                        src={img.url.startsWith('http') ? img.url : `${UPLOADS_URL}${img.url}`}
                         height={100}
                         alt={img.caption || 'Imagen'}
                       />

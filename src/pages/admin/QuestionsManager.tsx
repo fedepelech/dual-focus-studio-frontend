@@ -8,7 +8,6 @@ import {
   NumberInput,
   Button,
   ActionIcon,
-  Table,
   Badge,
   Modal,
   Select,
@@ -21,7 +20,6 @@ import {
   LoadingOverlay,
 } from '@mantine/core';
 import { Plus, Trash, Edit, Save } from 'lucide-react';
-import { notifications } from '@mantine/notifications';
 import api from '../../api/axios';
 
 interface Service {

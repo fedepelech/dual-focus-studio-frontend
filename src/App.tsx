@@ -23,6 +23,7 @@ import Footer from './components/Footer';
 interface PortfolioImage {
   id: string;
   filename: string;
+  url: string;
   caption?: string;
 }
 
@@ -170,7 +171,7 @@ function HomePage() {
           <Stack>
             <Box pos="relative">
               <Image
-                src={`${UPLOADS_URL}/${selectedProject.images[currentImageIndex].filename}`}
+                src={selectedProject.images[currentImageIndex].url.startsWith('http') ? selectedProject.images[currentImageIndex].url : `${UPLOADS_URL}${selectedProject.images[currentImageIndex].url}`}
                 alt={selectedProject.images[currentImageIndex].caption || 'Imagen'}
                 height={400}
                 fit="contain"

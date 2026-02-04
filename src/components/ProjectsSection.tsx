@@ -4,6 +4,7 @@ import React from 'react';
 interface PortfolioImage {
   id: string;
   filename: string;
+  url: string;
   caption?: string;
 }
 
@@ -37,7 +38,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ portfolio, onProjectC
             <div className="overflow-hidden rounded-2xl mb-6 aspect-[4/3] bg-gray-100">
               {project.images.length > 0 ? (
                 <img
-                  src={`${uploadsUrl}/${project.images[0].filename}`}
+                  src={project.images[0].url.startsWith('http') ? project.images[0].url : `${uploadsUrl}${project.images[0].url}`}
                   alt={project.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
