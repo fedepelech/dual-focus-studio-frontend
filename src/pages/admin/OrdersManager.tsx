@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Table, Title, Badge, ActionIcon, Group, Modal, Stack, Text, Card, SimpleGrid, Button, LoadingOverlay, ScrollArea } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { Eye, Check, Clock, X, AlertCircle } from 'lucide-react';
 import api from '../../api/axios';
 import { format } from 'date-fns';
@@ -20,9 +22,10 @@ interface Order {
   zone: string;
   propertyType: string;
   details?: string;
+  totalPrice?: number;
   createdAt: string;
   customer: { name: string; email: string };
-  service: { name: string; basePrice: number };
+  services: { service: { name: string; basePrice: number } }[];
   responses: OrderResponse[];
 }
 
@@ -31,6 +34,8 @@ export function OrdersManager() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const { orderId } = useParams();
+  const navigate = useNavigate();
 
   const fetchOrders = async () => {
     try {
@@ -46,7 +51,10 @@ export function OrdersManager() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+    if (orderId) {
+      openDetail(orderId);
+    }
+  }, [orderId]);
 
   const openDetail = async (orderId: string) => {
     try {
@@ -57,6 +65,30 @@ export function OrdersManager() {
       console.error('Error fetching order detail:', error);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, newStatus: string) => {
+    if (!window.confirm(`¿Estás seguro de cambiar el estado a ${newStatus}?`)) return;
+
+    try {
+      await api.patch(`/orders/${id}/status`, { status: newStatus });
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+      notifications.show({
+        title: 'Estado actualizado',
+        message: `El pedido ha sido marcado como ${newStatus}`,
+        color: 'green',
+      });
+      // If the detailed modal is open for this order, update its status too
+      if (selectedOrder && selectedOrder.id === id) {
+        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'No se pudo actualizar el estado del pedido',
+        color: 'red',
+      });
     }
   };
 
@@ -81,8 +113,16 @@ export function OrdersManager() {
   };
 
   const calculateTotal = (order: Order) => {
-    if (!order.service) return 0;
-    let total = order.service.basePrice;
+    // Usar precio guardado en backend si existe (órdenes nuevas)
+    if (order.totalPrice != null) return order.totalPrice;
+    // Fallback: calcular del lado del cliente para órdenes antiguas
+    if (!order.services) return 0;
+    let total = 0;
+    // Sumar precios base de todos los servicios
+    order.services.forEach(s => {
+      total += s.service.basePrice;
+    });
+    // Sumar modificadores de respuestas
     order.responses?.forEach(r => {
       if (r.option?.priceModifier) {
         total += r.option.priceModifier;
@@ -106,7 +146,7 @@ export function OrdersManager() {
               <Table.Tr>
                 <Table.Th>Fecha</Table.Th>
                 <Table.Th>Cliente</Table.Th>
-                <Table.Th>Servicio</Table.Th>
+                <Table.Th>Servicios</Table.Th>
                 <Table.Th>Estado</Table.Th>
                 <Table.Th>Total</Table.Th>
                 <Table.Th ta="right">Acciones</Table.Th>
@@ -124,7 +164,13 @@ export function OrdersManager() {
                       <Text size="xs" c="dimmed">{order.customer.email}</Text>
                     </Stack>
                   </Table.Td>
-                  <Table.Td>{order.service.name}</Table.Td>
+                  <Table.Td>
+                    <Group gap={4}>
+                      {order.services.map((s, idx) => (
+                        <Badge key={idx} variant="outline" size="xs">{s.service.name}</Badge>
+                      ))}
+                    </Group>
+                  </Table.Td>
                   <Table.Td>
                     <Badge color={getStatusColor(order.status)} leftSection={getStatusIcon(order.status)} variant="light">
                       {order.status}
@@ -134,9 +180,37 @@ export function OrdersManager() {
                     <Text fw={700}>${calculateTotal(order)}</Text>
                   </Table.Td>
                   <Table.Td ta="right">
-                    <ActionIcon variant="light" color="blue" onClick={() => openDetail(order.id)}>
-                      <Eye size={16} />
-                    </ActionIcon>
+                    <Group gap="xs">
+                      <ActionIcon
+                        variant="subtle"
+                        color="blue"
+                        title="Ver detalles"
+                        onClick={() => openDetail(order.id)}
+                      >
+                        <Eye size={16} />
+                      </ActionIcon>
+
+                      {order.status === 'PENDING' && (
+                        <>
+                          <ActionIcon
+                            variant="subtle"
+                            color="green"
+                            title="Marcar como Finalizado"
+                            onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
+                          >
+                            <Check size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            title="Cancelar Pedido"
+                            onClick={() => handleStatusUpdate(order.id, 'CANCELLED')}
+                          >
+                            <X size={16} />
+                          </ActionIcon>
+                        </>
+                      )}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -152,7 +226,10 @@ export function OrdersManager() {
 
       <Modal
         opened={!!selectedOrder}
-        onClose={() => setSelectedOrder(null)}
+        onClose={() => {
+          setSelectedOrder(null);
+          if (orderId) navigate('/admin/orders');
+        }}
         title={<Text fw={700} size="lg">Detalle del Pedido</Text>}
         size="xl"
       >

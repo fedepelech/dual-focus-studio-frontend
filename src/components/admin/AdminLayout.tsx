@@ -1,6 +1,6 @@
 import { AppShell, Burger, Group, NavLink, Title, Button, Text, ActionIcon, Menu, Indicator } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { LayoutDashboard, MessageSquare, Image, LogOut, ShoppingCart, Bell } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Image, LogOut, ShoppingCart, Bell, HelpCircle, MapPin } from 'lucide-react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -77,7 +77,10 @@ export function AdminLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={3} className="text-[#1e3a5f]">ArqAdmin</Title>
+            <Group gap="xs">
+              <img src="/logo.jpg" alt="Dual Focus" className="h-8 w-auto object-contain rounded-sm" />
+              <Title order={3} className="text-[#1e3a5f]">Dual Focus Admin</Title>
+            </Group>
           </Group>
           <Group>
             <Menu shadow="md" width={300} position="bottom-end" onClose={markAllAsRead}>
@@ -145,6 +148,18 @@ export function AdminLayout() {
           leftSection={<Image size={16} />}
           active={location.pathname === '/admin/portfolio'}
           onClick={() => navigate('/admin/portfolio')}
+        />
+        <NavLink
+          label="Gestionar FAQ"
+          leftSection={<HelpCircle size={16} />}
+          active={location.pathname === '/admin/faq'}
+          onClick={() => navigate('/admin/faq')}
+        />
+        <NavLink
+          label="Gestionar Zonas GBA"
+          leftSection={<MapPin size={16} />}
+          active={location.pathname === '/admin/zones'}
+          onClick={() => navigate('/admin/zones')}
         />
       </AppShell.Navbar>
 

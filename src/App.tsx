@@ -2,13 +2,16 @@ import { Container, Title, Text, Group, Stack, Modal, ActionIcon, Box, Image } f
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { OrderForm } from './components/OrderForm';
 import { useRef, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { QuestionsManager } from './pages/admin/QuestionsManager';
 import { PortfolioManager } from './pages/admin/PortfolioManager';
+import ZonasManager from './pages/admin/ZonasManager';
+import ReviewPage from './pages/ReviewPage';
 import { OrdersManager } from './pages/admin/OrdersManager';
+import { FaqManager } from './pages/admin/FaqManager';
 import api from './api/axios';
 import { UPLOADS_URL } from './config/env';
 
@@ -19,6 +22,9 @@ import ServicesSection from './components/ServicesSection';
 import ProjectsSection from './components/ProjectsSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
+import WhatsAppButton from './components/WhatsAppButton';
+import TestimonialsSection from './components/TestimonialsSection';
+import { FaqSection } from './components/FaqSection';
 
 interface PortfolioImage {
   id: string;
@@ -38,7 +44,11 @@ interface PortfolioProject {
 // Componente para proteger rutas de admin
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  }
   return <>{children}</>;
 };
 
@@ -106,7 +116,7 @@ function HomePage() {
 
         {/* Order Form Section */}
         <section id="pedido" ref={formRef} className="py-24 bg-[#f2e7d5]">
-          <Container size="sm">
+          <Container size="lg">
             <Stack align="center" gap="xs" mb={40}>
               <h2 className="text-3xl font-bold text-[#1c304a]">Hacé tu pedido</h2>
               <Text color="dimmed" ta="center">Completá el formulario y nos contactaremos en menos de 24hs.</Text>
@@ -150,11 +160,13 @@ function HomePage() {
             </div>
           </Container>
         </section>
-
+        <TestimonialsSection />
+        <FaqSection />
         <ContactSection />
       </main>
 
       <Footer />
+      <WhatsAppButton />
 
       {/* Modal de Proyecto con Carrusel (Preservado) */}
       <Modal
@@ -237,6 +249,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/valorar/:token" element={<ReviewPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
@@ -255,7 +268,9 @@ function App() {
             } />
             <Route path="questions" element={<QuestionsManager />} />
             <Route path="portfolio" element={<PortfolioManager />} />
-            <Route path="orders" element={<OrdersManager />} />
+            <Route path="zones" element={<ZonasManager />} />
+            <Route path="orders/:orderId?" element={<OrdersManager />} />
+            <Route path="faq" element={<FaqManager />} />
           </Route>
         </Routes>
       </BrowserRouter>

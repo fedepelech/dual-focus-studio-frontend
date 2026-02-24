@@ -85,8 +85,10 @@ export function PortfolioManager() {
       setProjectModalOpened(false);
       resetProjectForm();
       fetchProjects();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating project:', error);
+      const msg = error?.response?.data?.message || 'Error desconocido al crear el proyecto';
+      alert(`Error al crear el proyecto: ${msg}. ¿Estás logueado como admin?`);
     }
   };
 

@@ -11,7 +11,7 @@ import {
   Stack,
 } from '@mantine/core';
 import { AlertCircle, Lock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,6 +22,9 @@ export function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const location = useLocation();
+
+  const from = (location.state as any)?.from?.pathname || '/admin/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ export function AdminLogin() {
     try {
       const response = await api.post('/auth/login', { email, password });
       login(response.data.access_token);
-      navigate('/admin/dashboard');
+      navigate(from, { replace: true });
     } catch (err: any) {
       if (err.response?.status === 401) {
         setError(err.response.data.message || 'Credenciales inválidas');

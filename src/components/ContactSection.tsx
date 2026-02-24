@@ -72,11 +72,11 @@ const ContactSection: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-4 text-[#1c304a]">
               <Phone size={20} />
-              <span className="font-medium">+54 11 1234 5678</span>
+              <span className="font-medium">+54 9 11 2133 3333</span>
             </div>
             <div className="flex items-center gap-4 text-[#1c304a]">
               <Mail size={20} />
-              <span className="font-medium">contacto@arqservicios.com</span>
+              <span className="font-medium">contacto@dualfocus.com.ar</span>
             </div>
           </div>
 

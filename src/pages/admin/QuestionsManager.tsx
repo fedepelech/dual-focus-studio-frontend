@@ -34,8 +34,14 @@ interface Question {
   text: string;
   inputType: string;
   isRequired: boolean;
+  isActive: boolean;
   serviceId?: string | null;
   displayOrder: number;
+  displaySection: number;
+  dependsOnOptionId?: string | null;
+  pricingBaseUnits?: number | null;
+  pricingStepSize?: number | null;
+  pricingStepPrice?: number | null;
   options?: any[];
 }
 
@@ -138,6 +144,13 @@ export function QuestionsManager() {
     return grouped;
   }, [questions, services]);
 
+  const allOptions = useMemo(() => {
+    return questions.flatMap(q => (q.options || []).map(o => ({
+      value: o.id,
+      label: `${q.text.substring(0, 30)}... -> ${o.label}`
+    })));
+  }, [questions]);
+
   return (
     <Container size="xl" py="xl" pos="relative">
       <LoadingOverlay visible={loading} />
@@ -227,6 +240,7 @@ export function QuestionsManager() {
           key={editingQuestion?.id || 'new'} // Forzar reinicio al cambiar
           initialValues={editingQuestion}
           services={services}
+          allOptions={allOptions}
           onSave={handleSaveQuestion}
           onCancel={() => setModalOpened(false)}
           onRefresh={fetchData}
@@ -264,6 +278,12 @@ function QuestionsList({ questions, onEdit, onDelete }: { questions: Question[],
               Opciones: {q.options.map(o => `${o.label} (+$${o.priceModifier})`).join(', ')}
             </Text>
           )}
+          {/* Mostrar configuración de precios escalonados */}
+          {q.pricingBaseUnits != null && q.pricingStepPrice != null && (
+            <Text size="xs" c="blue" mt={4} ml={30}>
+              💰 Precio adicional: hasta {q.pricingBaseUnits}m² incluido, luego ${q.pricingStepPrice}/m² extra
+            </Text>
+          )}
         </Card>
       ))}
     </Stack>
@@ -277,7 +297,7 @@ interface QuestionOption {
   priceModifier: number;
 }
 
-function QuestionForm({ initialValues, services, onSave, onCancel, onRefresh }: any) {
+function QuestionForm({ initialValues, services, allOptions, onSave, onCancel, onRefresh }: any) {
   const isEditing = !!initialValues?.id;
 
   const [values, setValues] = useState({
@@ -287,6 +307,11 @@ function QuestionForm({ initialValues, services, onSave, onCancel, onRefresh }: 
     isActive: initialValues?.isActive ?? true,
     displayOrder: initialValues?.displayOrder || 0,
     serviceId: initialValues?.serviceId || null,
+    displaySection: initialValues?.displaySection || 2,
+    pricingBaseUnits: initialValues?.pricingBaseUnits || undefined,
+    pricingStepSize: initialValues?.pricingStepSize || undefined,
+    pricingStepPrice: initialValues?.pricingStepPrice || undefined,
+    dependsOnOptionId: initialValues?.dependsOnOptionId || null,
   });
 
   const [options, setOptions] = useState<QuestionOption[]>(
@@ -400,6 +425,53 @@ function QuestionForm({ initialValues, services, onSave, onCancel, onRefresh }: 
         onChange={(val) => setValues({ ...values, serviceId: val })}
         description="Si se deja vacío, la pregunta aparecerá para todos los servicios."
       />
+
+      <Group grow>
+        <Select
+          label="Sección de Visualización"
+          data={[
+            { value: '1', label: '1 - Inmueble (Paso 1)' },
+            { value: '2', label: '2 - Detalles (Paso 2)' },
+          ]}
+          value={values.displaySection.toString()}
+          onChange={(val) => setValues({ ...values, displaySection: Number(val) })}
+        />
+        <Select
+          label="Depende de Opción (Condicional)"
+          placeholder="Ninguna"
+          clearable
+          searchable
+          data={allOptions}
+          value={values.dependsOnOptionId}
+          onChange={(val) => setValues({ ...values, dependsOnOptionId: val })}
+        />
+      </Group>
+
+      {values.inputType === 'NUMBER' && (
+        <>
+          <Divider label="Configuración de Precios Adicionales" labelPosition="center" />
+          <Group grow>
+            <NumberInput
+              label="Unidades Base (incluidas)"
+              placeholder="Ej: 100"
+              value={values.pricingBaseUnits}
+              onChange={(val) => setValues({ ...values, pricingBaseUnits: Number(val) })}
+            />
+            <NumberInput
+              label="Tamaño del Tramo"
+              placeholder="Ej: 10"
+              value={values.pricingStepSize}
+              onChange={(val) => setValues({ ...values, pricingStepSize: Number(val) })}
+            />
+            <NumberInput
+              label="Precio por Tramo"
+              prefix="$ "
+              value={values.pricingStepPrice}
+              onChange={(val) => setValues({ ...values, pricingStepPrice: Number(val) })}
+            />
+          </Group>
+        </>
+      )}
 
       <Group>
         <Switch

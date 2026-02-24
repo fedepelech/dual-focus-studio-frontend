@@ -10,7 +10,7 @@ const Hero: React.FC<HeroProps> = ({ onOrderClick, onServicesClick }) => {
     <div className="bg-[#1c304a] text-white py-20 px-6 md:px-20 flex flex-col items-start min-h-[500px] justify-center">
       <div className="max-w-3xl">
         <span className="text-[10px] uppercase tracking-[0.2em] font-bold border border-white/30 px-3 py-1 rounded-full text-white/80 mb-6 inline-block">
-          Servicios de Arquitectura Profesional
+          Dual Focus - Servicios de Arquitectura Profesional
         </span>
         <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
           Transformamos tu <span className="italic font-light opacity-90 underline decoration-1 underline-offset-4">visión</span> en realidad digital

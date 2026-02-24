@@ -15,6 +15,11 @@ export interface Question {
   displayOrder: number;
   isRequired: boolean;
   options: QuestionOption[];
+  pricingBaseUnits?: number;
+  pricingStepSize?: number;
+  pricingStepPrice?: number;
+  dependsOnOptionId?: string;
+  displaySection?: number;
 }
 
 export interface QuestionResponse {
