@@ -294,11 +294,6 @@ export function OrdersManager() {
                       Marcar Pendiente
                     </Button>
                   )}
-                  {selectedOrder.status !== 'IN_PROGRESS' && (
-                    <Button size="xs" variant="light" color="blue" onClick={() => handleStatusUpdate(selectedOrder.id, 'IN_PROGRESS')}>
-                      En Proceso
-                    </Button>
-                  )}
                   {selectedOrder.status !== 'COMPLETED' && (
                     <Button size="xs" variant="light" color="green" onClick={() => handleStatusUpdate(selectedOrder.id, 'COMPLETED')}>
                       Finalizado
