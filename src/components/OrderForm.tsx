@@ -77,7 +77,7 @@ export function OrderForm() {
     if (formData.zone === Zone.GBA) {
       const fetchSubzones = async () => {
         try {
-          const res = await api.get('/zones/gba-subzones');
+          const res = await api.get('/zones/gba-subzones?onlyEnabled=true');
           setGbaSubzones(res.data);
         } catch (error) {
           console.error('Error fetching subzones:', error);
@@ -382,7 +382,7 @@ export function OrderForm() {
                     <Select
                       label="Partido / Subzona GBA"
                       required
-                      data={gbaSubzones.filter(z => z.isEnabled).map(z => ({ value: z.name, label: z.name }))}
+                      data={gbaSubzones.filter(z => z.isEnabled !== false).map(z => ({ value: z.name, label: z.name }))}
                       value={formData.gbaSubzone}
                       onChange={(val) => setFormData({ ...formData, gbaSubzone: val || '' })}
                     />
