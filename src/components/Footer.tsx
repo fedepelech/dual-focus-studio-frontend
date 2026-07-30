@@ -10,11 +10,7 @@ const Footer: React.FC = () => {
             Servicios profesionales de arquitectura, fotografía y digitalización de planos.
           </p>
         </div>
-        <div className="flex flex-col md:items-end gap-4 text-xs opacity-60">
-          <div className="flex gap-6">
-            <a href="#" className="hover:opacity-100 transition-opacity">Términos y Condiciones</a>
-            <a href="#" className="hover:opacity-100 transition-opacity">Política de Privacidad</a>
-          </div>
+        <div className="flex flex-col md:items-end text-xs opacity-60">
           <p>
             © {new Date().getFullYear()} Dual Focus. Todos los derechos reservados.
           </p>

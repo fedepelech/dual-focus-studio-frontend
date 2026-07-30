@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Mail, Linkedin, Instagram, Facebook } from 'lucide-react';
+import { Phone, Mail, Instagram } from 'lucide-react';
 
 const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -80,15 +80,15 @@ const ContactSection: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <a href="#" className="bg-[#1c304a] text-[#d9c5b2] p-2.5 rounded-lg hover:opacity-80 transition-opacity">
-              <Linkedin size={20} />
-            </a>
-            <a href="#" className="bg-[#1c304a] text-[#d9c5b2] p-2.5 rounded-lg hover:opacity-80 transition-opacity">
+          <div>
+            <a
+              href="https://www.instagram.com/studio.dualfocus/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex bg-[#1c304a] text-[#d9c5b2] p-2.5 rounded-lg hover:opacity-80 transition-opacity"
+              aria-label="Instagram"
+            >
               <Instagram size={20} />
-            </a>
-            <a href="#" className="bg-[#1c304a] text-[#d9c5b2] p-2.5 rounded-lg hover:opacity-80 transition-opacity">
-              <Facebook size={20} />
             </a>
           </div>
         </div>

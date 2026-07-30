@@ -216,7 +216,14 @@ export function OrderForm() {
   const hasFotoOrVideo = selectedServices.some(s => s.category?.toUpperCase() === 'FOTOGRAFIA' || s.category?.toUpperCase() === 'VIDEO');
 
   const renderResumenStep = () => {
-    const { items, total } = calculateOrderPrice(services, formData.serviceIds, questions, formData.responses);
+    const { items, total } = calculateOrderPrice(
+      services,
+      formData.serviceIds,
+      questions,
+      formData.responses,
+      formData.zone === Zone.GBA ? formData.gbaSubzone : undefined,
+      gbaSubzones,
+    );
 
     return (
       <Stack mt="md" gap="md">
@@ -370,14 +377,16 @@ export function OrderForm() {
                 <Select label="Zona" required data={ZONE_OPTIONS} value={formData.zone} onChange={(val) => setFormData({ ...formData, zone: val as Zone })} />
                 <Select label="Tipo de inmueble" required data={PROPERTY_TYPE_OPTIONS} value={formData.propertyType} onChange={(val) => setFormData({ ...formData, propertyType: val as PropertyType })} />
                 {formData.zone === Zone.GBA && (
-                  <Select
-                    label="Partido / Subzona GBA"
-                    required
-                    data={gbaSubzones.map(z => ({ value: z.name, label: z.name + (z.isEnabled ? '' : ' (Sin cobertura)') }))}
-                    value={formData.gbaSubzone}
-                    onChange={(val) => setFormData({ ...formData, gbaSubzone: val || '' })}
-                    error={formData.gbaSubzone && gbaSubzones.find(z => z.name === formData.gbaSubzone)?.isEnabled === false ? 'Sin cobertura en este partido.' : null}
-                  />
+                  <Stack gap={4}>
+                    <Text size="xs" c="dimmed">Los costos pueden variar según la zona.</Text>
+                    <Select
+                      label="Partido / Subzona GBA"
+                      required
+                      data={gbaSubzones.filter(z => z.isEnabled).map(z => ({ value: z.name, label: z.name }))}
+                      value={formData.gbaSubzone}
+                      onChange={(val) => setFormData({ ...formData, gbaSubzone: val || '' })}
+                    />
+                  </Stack>
                 )}
                 <Textarea label="Detalles adicionales" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
                 {questions.filter(q => q.displaySection === 1 && isQuestionVisible(q)).map(q => (
@@ -413,7 +422,14 @@ export function OrderForm() {
         </Grid.Col>
         {active < TOTAL_STEPS && formData.serviceIds.length > 0 && (
           <Grid.Col span={{ base: 12, xl: 4 }}>
-            <OrderPriceSummary services={services} selectedServiceIds={formData.serviceIds} questions={questions} responses={formData.responses} />
+            <OrderPriceSummary
+              services={services}
+              selectedServiceIds={formData.serviceIds}
+              questions={questions}
+              responses={formData.responses}
+              selectedSubzone={formData.zone === Zone.GBA ? formData.gbaSubzone : undefined}
+              subzonesList={gbaSubzones}
+            />
           </Grid.Col>
         )}
       </Grid>

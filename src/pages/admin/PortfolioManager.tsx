@@ -20,6 +20,7 @@ import {
   Accordion,
   Box,
   Tabs,
+  Progress,
 } from '@mantine/core';
 import { Plus, Trash, Upload, ImagePlus, Video } from 'lucide-react';
 import api from '../../api/axios';
@@ -75,6 +76,7 @@ export function PortfolioManager() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     fetchProjects();
@@ -161,7 +163,15 @@ export function PortfolioManager() {
     e.preventDefault();
     if (!videoFile || !selectedProjectId) return;
 
+    // Validación preventiva en frontend (máximo 150MB para proxies como Cloudflare/Railway)
+    const MAX_MB = 150;
+    if (videoFile.size > MAX_MB * 1024 * 1024) {
+      alert(`El archivo pesa ${(videoFile.size / (1024 * 1024)).toFixed(1)}MB. Para evitar cortes de red o límites de Cloudflare/Railway, el peso máximo recomendado es de ${MAX_MB}MB.`);
+      return;
+    }
+
     setUploadingVideo(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append('file', videoFile);
     if (videoTitle) formData.append('title', videoTitle);
@@ -169,16 +179,28 @@ export function PortfolioManager() {
     try {
       await api.post(`/portfolio/projects/${selectedProjectId}/videos`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percent);
+          }
+        },
       });
       setVideoModalOpened(false);
       resetVideoForm();
       fetchProjects();
+      alert('¡Video subido con éxito!');
     } catch (error: any) {
       console.error('Error uploading video:', error);
-      const msg = error?.response?.data?.message || 'Error al subir el video a Cloudflare R2';
-      alert(`Error al subir el video: ${msg}`);
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        alert('Error de red al subir el video (ERR_NETWORK). Esto ocurre cuando el archivo excede los límites permitidos por la red/proxy o por tiempo de espera. Se recomienda optimizar o comprimir el video a un peso menor.');
+      } else {
+        const msg = error?.response?.data?.message || 'Error al subir el video a Cloudflare R2';
+        alert(`Error al subir el video: ${msg}`);
+      }
     } finally {
       setUploadingVideo(false);
+      setUploadProgress(0);
     }
   };
 
@@ -208,6 +230,7 @@ export function PortfolioManager() {
   const resetVideoForm = () => {
     setVideoFile(null);
     setVideoTitle('');
+    setUploadProgress(0);
     setSelectedProjectId(null);
   };
 
@@ -477,8 +500,16 @@ export function PortfolioManager() {
               value={videoTitle}
               onChange={(e) => setVideoTitle(e.currentTarget.value)}
             />
+            {uploadingVideo && (
+              <Box>
+                <Text size="xs" c="dimmed" mb={4} ta="center">
+                  Subiendo... {uploadProgress}%
+                </Text>
+                <Progress value={uploadProgress} animated color="teal" size="sm" radius="xl" />
+              </Box>
+            )}
             <Button type="submit" loading={uploadingVideo} color="teal" fullWidth>
-              {uploadingVideo ? 'Subiendo a Cloudflare R2 Storage...' : 'Subir Video a Cloudflare R2'}
+              {uploadingVideo ? `Subiendo al servidor (${uploadProgress}%)...` : 'Subir Video a Cloudflare R2'}
             </Button>
           </Stack>
         </form>
