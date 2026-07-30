@@ -19,8 +19,9 @@ import {
   LoadingOverlay,
   Accordion,
   Box,
+  Tabs,
 } from '@mantine/core';
-import { Plus, Trash, Upload, ImagePlus } from 'lucide-react';
+import { Plus, Trash, Upload, ImagePlus, Video } from 'lucide-react';
 import api from '../../api/axios';
 import { UPLOADS_URL } from '../../config/env';
 
@@ -32,14 +33,25 @@ interface PortfolioImage {
   displayOrder: number;
 }
 
+interface PortfolioVideo {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  title?: string;
+  displayOrder: number;
+}
+
 interface PortfolioProject {
   id: string;
   title: string;
   description?: string;
   category?: string;
   images: PortfolioImage[];
+  videos?: PortfolioVideo[];
 }
-
 
 export function PortfolioManager() {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
@@ -56,7 +68,13 @@ export function PortfolioManager() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Modal para subir video (Cloudflare R2)
+  const [videoModalOpened, setVideoModalOpened] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -93,7 +111,7 @@ export function PortfolioManager() {
   };
 
   const handleDeleteProject = async (id: string) => {
-    if (window.confirm('¿Estás seguro de eliminar este proyecto y todas sus imágenes?')) {
+    if (window.confirm('¿Estás seguro de eliminar este proyecto, sus imágenes y sus videos?')) {
       try {
         await api.delete(`/portfolio/projects/${id}`);
         fetchProjects();
@@ -107,7 +125,7 @@ export function PortfolioManager() {
     e.preventDefault();
     if (!file || !selectedProjectId) return;
 
-    setUploading(true);
+    setUploadingImage(true);
     const formData = new FormData();
     formData.append('file', file);
     if (caption) formData.append('caption', caption);
@@ -119,10 +137,12 @@ export function PortfolioManager() {
       setImageModalOpened(false);
       resetImageForm();
       fetchProjects();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
+      const msg = error?.response?.data?.message || 'Error al subir la imagen';
+      alert(msg);
     } finally {
-      setUploading(false);
+      setUploadingImage(false);
     }
   };
 
@@ -133,6 +153,42 @@ export function PortfolioManager() {
         fetchProjects();
       } catch (error) {
         console.error('Error deleting image:', error);
+      }
+    }
+  };
+
+  const handleUploadVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoFile || !selectedProjectId) return;
+
+    setUploadingVideo(true);
+    const formData = new FormData();
+    formData.append('file', videoFile);
+    if (videoTitle) formData.append('title', videoTitle);
+
+    try {
+      await api.post(`/portfolio/projects/${selectedProjectId}/videos`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setVideoModalOpened(false);
+      resetVideoForm();
+      fetchProjects();
+    } catch (error: any) {
+      console.error('Error uploading video:', error);
+      const msg = error?.response?.data?.message || 'Error al subir el video a Cloudflare R2';
+      alert(`Error al subir el video: ${msg}`);
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (window.confirm('¿Eliminar este video de Cloudflare R2 y del portfolio?')) {
+      try {
+        await api.delete(`/portfolio/videos/${videoId}`);
+        fetchProjects();
+      } catch (error) {
+        console.error('Error deleting video:', error);
       }
     }
   };
@@ -149,9 +205,20 @@ export function PortfolioManager() {
     setSelectedProjectId(null);
   };
 
+  const resetVideoForm = () => {
+    setVideoFile(null);
+    setVideoTitle('');
+    setSelectedProjectId(null);
+  };
+
   const openImageModal = (projectId: string) => {
     setSelectedProjectId(projectId);
     setImageModalOpened(true);
+  };
+
+  const openVideoModal = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setVideoModalOpened(true);
   };
 
   return (
@@ -184,7 +251,10 @@ export function PortfolioManager() {
                     </Badge>
                   )}
                   <Badge variant="outline" size="xs">
-                    {project.images.length} imagen(es)
+                    {project.images?.length || 0} imagen(es)
+                  </Badge>
+                  <Badge variant="outline" color="teal" size="xs">
+                    {project.videos?.length || 0} video(s)
                   </Badge>
                 </Group>
               </Group>
@@ -208,6 +278,15 @@ export function PortfolioManager() {
                 <Button
                   size="xs"
                   variant="light"
+                  color="teal"
+                  leftSection={<Video size={14} />}
+                  onClick={() => openVideoModal(project.id)}
+                >
+                  Agregar Video
+                </Button>
+                <Button
+                  size="xs"
+                  variant="light"
                   color="red"
                   leftSection={<Trash size={14} />}
                   onClick={() => handleDeleteProject(project.id)}
@@ -216,33 +295,88 @@ export function PortfolioManager() {
                 </Button>
               </Group>
 
-              <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">
-                {project.images.map((img) => (
-                  <Card key={img.id} padding="xs" withBorder>
-                    <Card.Section>
-                      <Image
-                        src={img.url.startsWith('http') ? img.url : `${UPLOADS_URL}${img.url}`}
-                        height={100}
-                        alt={img.caption || 'Imagen'}
-                      />
-                    </Card.Section>
-                    <Box pt="xs">
-                      <Text size="xs" lineClamp={1}>
-                        {img.caption || 'Sin descripción'}
-                      </Text>
-                      <ActionIcon
-                        size="xs"
-                        variant="subtle"
-                        color="red"
-                        mt={4}
-                        onClick={() => handleDeleteImage(img.id)}
-                      >
-                        <Trash size={12} />
-                      </ActionIcon>
-                    </Box>
-                  </Card>
-                ))}
-              </SimpleGrid>
+              <Tabs defaultValue="images">
+                <Tabs.List mb="sm">
+                  <Tabs.Tab value="images">
+                    Imágenes ({project.images?.length || 0})
+                  </Tabs.Tab>
+                  <Tabs.Tab value="videos">
+                    Videos ({project.videos?.length || 0})
+                  </Tabs.Tab>
+                </Tabs.List>
+
+                <Tabs.Panel value="images">
+                  {(!project.images || project.images.length === 0) ? (
+                    <Text size="xs" c="dimmed" py="md">No hay imágenes en este proyecto.</Text>
+                  ) : (
+                    <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">
+                      {project.images.map((img) => (
+                        <Card key={img.id} padding="xs" withBorder>
+                          <Card.Section>
+                            <Image
+                              src={img.url.startsWith('http') ? img.url : `${UPLOADS_URL}${img.url}`}
+                              height={100}
+                              alt={img.caption || 'Imagen'}
+                            />
+                          </Card.Section>
+                          <Box pt="xs">
+                            <Text size="xs" lineClamp={1}>
+                              {img.caption || 'Sin descripción'}
+                            </Text>
+                            <ActionIcon
+                              size="xs"
+                              variant="subtle"
+                              color="red"
+                              mt={4}
+                              onClick={() => handleDeleteImage(img.id)}
+                            >
+                              <Trash size={12} />
+                            </ActionIcon>
+                          </Box>
+                        </Card>
+                      ))}
+                    </SimpleGrid>
+                  )}
+                </Tabs.Panel>
+
+                <Tabs.Panel value="videos">
+                  {(!project.videos || project.videos.length === 0) ? (
+                    <Text size="xs" c="dimmed" py="md">No hay videos en este proyecto.</Text>
+                  ) : (
+                    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
+                      {project.videos.map((vid) => {
+                        const videoUrl = vid.url.startsWith('http') ? vid.url : `${UPLOADS_URL}${vid.url}`;
+                        return (
+                          <Card key={vid.id} padding="xs" withBorder>
+                            <Card.Section style={{ position: 'relative', backgroundColor: '#000' }}>
+                              <video
+                                src={videoUrl}
+                                controls
+                                preload="metadata"
+                                style={{ width: '100%', height: 140, objectFit: 'cover' }}
+                              />
+                            </Card.Section>
+                            <Box pt="xs">
+                              <Text size="xs" fw={500} lineClamp={1}>
+                                {vid.title || vid.originalName || 'Video de R2'}
+                              </Text>
+                              <ActionIcon
+                                size="xs"
+                                variant="subtle"
+                                color="red"
+                                mt={4}
+                                onClick={() => handleDeleteVideo(vid.id)}
+                              >
+                                <Trash size={12} />
+                              </ActionIcon>
+                            </Box>
+                          </Card>
+                        );
+                      })}
+                    </SimpleGrid>
+                  )}
+                </Tabs.Panel>
+              </Tabs>
             </Accordion.Panel>
           </Accordion.Item>
         ))}
@@ -287,7 +421,10 @@ export function PortfolioManager() {
       {/* Modal para subir imagen */}
       <Modal
         opened={imageModalOpened}
-        onClose={() => { setImageModalOpened(false); resetImageForm(); }}
+        onClose={() => {
+          setImageModalOpened(false);
+          resetImageForm();
+        }}
         title="Agregar imagen al proyecto"
       >
         <form onSubmit={handleUploadImage}>
@@ -307,8 +444,41 @@ export function PortfolioManager() {
               value={caption}
               onChange={(e) => setCaption(e.currentTarget.value)}
             />
-            <Button type="submit" loading={uploading} fullWidth>
+            <Button type="submit" loading={uploadingImage} fullWidth>
               Subir Imagen
+            </Button>
+          </Stack>
+        </form>
+      </Modal>
+
+      {/* Modal para subir video a Cloudflare R2 */}
+      <Modal
+        opened={videoModalOpened}
+        onClose={() => {
+          setVideoModalOpened(false);
+          resetVideoForm();
+        }}
+        title="Subir Video"
+      >
+        <form onSubmit={handleUploadVideo}>
+          <Stack>
+            <FileInput
+              label="Archivo de Video"
+              placeholder="Seleccionar video (MP4, MOV, WebM...)"
+              required
+              leftSection={<Video size={14} />}
+              accept="video/*"
+              value={videoFile}
+              onChange={setVideoFile}
+            />
+            <TextInput
+              label="Título / Descripción del video"
+              placeholder="Ej: Recorrido 3D en Video"
+              value={videoTitle}
+              onChange={(e) => setVideoTitle(e.currentTarget.value)}
+            />
+            <Button type="submit" loading={uploadingVideo} color="teal" fullWidth>
+              {uploadingVideo ? 'Subiendo a Cloudflare R2 Storage...' : 'Subir Video a Cloudflare R2'}
             </Button>
           </Stack>
         </form>

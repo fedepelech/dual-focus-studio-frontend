@@ -281,7 +281,7 @@ function QuestionsList({ questions, onEdit, onDelete }: { questions: Question[],
           {/* Mostrar configuración de precios escalonados */}
           {q.pricingBaseUnits != null && q.pricingStepPrice != null && (
             <Text size="xs" c="blue" mt={4} ml={30}>
-              💰 Precio adicional: hasta {q.pricingBaseUnits}m² incluido, luego ${q.pricingStepPrice}/m² extra
+              💰 Precio adicional: hasta {q.pricingBaseUnits}{q.text === 'Cantidad de ambientes' ? ' ambiente(s)' : 'm²'} incluido, luego ${q.pricingStepPrice}/{q.text === 'Cantidad de ambientes' ? 'ambiente' : 'm²'} extra
             </Text>
           )}
         </Card>

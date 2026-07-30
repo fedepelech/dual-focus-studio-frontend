@@ -8,6 +8,10 @@ const PRECIO_INICIAL = 0;
 /** Etiquetas del disclaimer de precio */
 const DISCLAIMER_TEXT = 'Precio estimado sujeto a confirmación del equipo';
 
+// Constantes fijas para los nombres de las preguntas con precios escalonados
+const PREGUNTA_CANTIDAD_AMBIENTES = 'Cantidad de ambientes';
+const PREGUNTA_METROS_CUADRADOS = 'Metros cuadrados a medir';
+
 interface PriceLineItem {
   label: string;
   amount: number;
@@ -16,7 +20,7 @@ interface PriceLineItem {
 
 interface OrderPriceSummaryProps {
   /** Servicios disponibles (todos) */
-  services: { id: string; name: string; basePrice: number }[];
+  services: { id: string; name: string; basePrice: number; category?: string }[];
   /** IDs de servicios seleccionados */
   selectedServiceIds: string[];
   /** Preguntas cargadas */
@@ -30,16 +34,21 @@ interface OrderPriceSummaryProps {
  * Reutilizable tanto para el componente visual como para el envío al backend.
  */
 export function calculateOrderPrice(
-  services: { id: string; name: string; basePrice: number }[],
+  services: { id: string; name: string; basePrice: number; category?: string }[],
   selectedServiceIds: string[],
   questions: Question[],
   responses: QuestionResponse[],
 ): { items: PriceLineItem[]; total: number } {
   const items: PriceLineItem[] = [];
 
+  const selectedServices = services.filter(s => selectedServiceIds.includes(s.id));
+  const hasPlanos = selectedServices.some(s => s.category?.toUpperCase() === 'PLANOS');
+  const hasFotoOrVideo = selectedServices.some(
+    s => s.category?.toUpperCase() === 'FOTOGRAFIA' || s.category?.toUpperCase() === 'VIDEO'
+  );
+
   // 1. Precios base de servicios seleccionados
-  for (const serviceId of selectedServiceIds) {
-    const service = services.find(s => s.id === serviceId);
+  for (const service of selectedServices) {
     if (service && service.basePrice > 0) {
       items.push({
         label: service.name,
@@ -66,7 +75,7 @@ export function calculateOrderPrice(
       }
     }
 
-    // 3. Pricing escalonado para preguntas numéricas
+    // 3. Pricing escalonado para preguntas numéricas (ambientes y m²)
     if (response.textValue) {
       const question = questions.find(q => q.id === response.questionId);
       if (
@@ -76,14 +85,21 @@ export function calculateOrderPrice(
         question.pricingStepSize != null &&
         question.pricingStepPrice != null
       ) {
+        // Si es cobro por ambiente, solo aplica si se seleccionó Planos
+        if (question.text === PREGUNTA_CANTIDAD_AMBIENTES && !hasPlanos) continue;
+
+        // Si es cobro por m², solo aplica si se seleccionó Fotografía o Video
+        if (question.text === PREGUNTA_METROS_CUADRADOS && !hasFotoOrVideo) continue;
+
         const valor = parseFloat(response.textValue);
         if (!isNaN(valor) && valor > question.pricingBaseUnits) {
           const unidadesExtra = valor - question.pricingBaseUnits;
           const pasos = Math.ceil(unidadesExtra / question.pricingStepSize);
           const precioExtra = pasos * question.pricingStepPrice;
           if (precioExtra > 0) {
+            const unidadTexto = question.text === PREGUNTA_CANTIDAD_AMBIENTES ? 'ambientes extras' : 'm² extras';
             items.push({
-              label: `${question.text} (+${unidadesExtra}m² extras)`,
+              label: `${question.text} (+${unidadesExtra} ${unidadTexto})`,
               amount: precioExtra,
               type: 'adicional',
             });

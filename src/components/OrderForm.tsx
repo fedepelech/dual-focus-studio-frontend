@@ -211,11 +211,12 @@ export function OrderForm() {
 
   const getZoneLabel = (zone: string) => ZONE_OPTIONS.find(z => z.value === zone)?.label || zone;
   const getPropertyTypeLabel = (type: string) => PROPERTY_TYPE_OPTIONS.find(p => p.value === type)?.label || type;
-  const getSelectedServices = () => services.filter(s => formData.serviceIds.includes(s.id));
+  const selectedServices = services.filter(s => formData.serviceIds.includes(s.id));
+  const hasPlanos = selectedServices.some(s => s.category?.toUpperCase() === 'PLANOS');
+  const hasFotoOrVideo = selectedServices.some(s => s.category?.toUpperCase() === 'FOTOGRAFIA' || s.category?.toUpperCase() === 'VIDEO');
 
   const renderResumenStep = () => {
     const { items, total } = calculateOrderPrice(services, formData.serviceIds, questions, formData.responses);
-    const selectedServices = getSelectedServices();
 
     return (
       <Stack mt="md" gap="md">
@@ -380,7 +381,7 @@ export function OrderForm() {
                 )}
                 <Textarea label="Detalles adicionales" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
                 {questions.filter(q => q.displaySection === 1 && isQuestionVisible(q)).map(q => (
-                  <DynamicQuestionField key={q.id} question={q} value={formData.responses.find(r => r.questionId === q.id)} onChange={handleResponseChange} />
+                  <DynamicQuestionField key={q.id} question={q} value={formData.responses.find(r => r.questionId === q.id)} onChange={handleResponseChange} hasPlanos={hasPlanos} hasFotoOrVideo={hasFotoOrVideo} />
                 ))}
               </Stack>
             </Stepper.Step>
@@ -388,7 +389,7 @@ export function OrderForm() {
               <Stack mt="md">
                 <Title order={4}>Preguntas sobre el servicio</Title>
                 {questions.filter(q => (q.displaySection === 2 || !q.displaySection) && isQuestionVisible(q)).map(q => (
-                  <DynamicQuestionField key={q.id} question={q} value={formData.responses.find(r => r.questionId === q.id)} onChange={handleResponseChange} />
+                  <DynamicQuestionField key={q.id} question={q} value={formData.responses.find(r => r.questionId === q.id)} onChange={handleResponseChange} hasPlanos={hasPlanos} hasFotoOrVideo={hasFotoOrVideo} />
                 ))}
               </Stack>
             </Stepper.Step>
