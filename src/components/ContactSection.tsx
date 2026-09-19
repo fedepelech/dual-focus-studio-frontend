@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Phone, Mail, Instagram } from 'lucide-react';
 
+/** Constantes de información de contacto */
+const CONTACT_PHONE = '+54 9 11 7821 7265';
+const CONTACT_EMAIL = 'contacto@dualfocus.com.ar';
+const INSTAGRAM_URL = 'https://www.instagram.com/studio.dualfocus/';
+
 const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
     nombre: '',
@@ -72,17 +77,17 @@ const ContactSection: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-4 text-[#1c304a]">
               <Phone size={20} />
-              <span className="font-medium">+54 9 11 2133 3333</span>
+              <span className="font-medium">{CONTACT_PHONE}</span>
             </div>
             <div className="flex items-center gap-4 text-[#1c304a]">
               <Mail size={20} />
-              <span className="font-medium">contacto@dualfocus.com.ar</span>
+              <span className="font-medium">{CONTACT_EMAIL}</span>
             </div>
           </div>
 
           <div>
             <a
-              href="https://www.instagram.com/studio.dualfocus/"
+              href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex bg-[#1c304a] text-[#d9c5b2] p-2.5 rounded-lg hover:opacity-80 transition-opacity"
