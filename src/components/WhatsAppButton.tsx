@@ -1,7 +1,7 @@
 import React from 'react';
 
 /** Número de WhatsApp (formato internacional sin +) */
-const WHATSAPP_NUMBER = '5491151750352';
+const WHATSAPP_NUMBER = '5491178217265';
 const WHATSAPP_MESSAGE = 'Hola! Me interesa consultar por sus servicios de arquitectura.';
 const WHATSAPP_ARIA_LABEL = 'Contactar por WhatsApp';
 

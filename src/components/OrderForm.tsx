@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Stepper, Button, Group, TextInput, Textarea, Stack, Title, Paper, LoadingOverlay, Checkbox, Text, Select, Grid, Card, SimpleGrid, Divider, Badge } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import api from '../api/client';
@@ -27,6 +27,7 @@ const PROPERTY_TYPE_OPTIONS = [
 export function OrderForm() {
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [services, setServices] = useState<any[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [barrios, setBarrios] = useState<BarrioConfig[]>([]);
@@ -141,6 +142,11 @@ export function OrderForm() {
   };
 
   const handleSubmit = async () => {
+    // Prevenir envíos múltiples si ya se está enviando el pedido
+    if (isSubmittingRef.current || loading) {
+      return;
+    }
+
     if (formData.serviceIds.length === 0) {
       notifications.show({
         title: 'Error',
@@ -150,6 +156,7 @@ export function OrderForm() {
       return;
     }
 
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       const userRes = await api.post('/users/find-or-create', {
@@ -196,6 +203,8 @@ export function OrderForm() {
         message: 'Error al realizar el pedido.',
         color: 'red',
       });
+      // Restablecer el flag solo si falló la creación para permitir reintentar
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }
@@ -425,14 +434,30 @@ export function OrderForm() {
           </Grid.Col>
         )}
       </Grid>
-      <Group justify="flex-end" mt="xl">
-        {active !== 0 && <Button variant="default" onClick={prevStep}>Atrás</Button>}
-        {active < STEP_RESUMEN ? (
-          <Button onClick={nextStep} color="secondary">Siguiente</Button>
-        ) : (
-          <Button onClick={handleSubmit} color="primary.1" c="secondary.9" loading={loading}>Confirmar y Enviar Pedido</Button>
-        )}
-      </Group>
+      {active < TOTAL_STEPS && (
+        <Group justify="flex-end" mt="xl">
+          {active !== 0 && (
+            <Button variant="default" onClick={prevStep} disabled={loading}>
+              Atrás
+            </Button>
+          )}
+          {active < STEP_RESUMEN ? (
+            <Button onClick={nextStep} color="secondary">
+              Siguiente
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              color="primary.1"
+              c="secondary.9"
+              loading={loading}
+              disabled={loading}
+            >
+              Confirmar y Enviar Pedido
+            </Button>
+          )}
+        </Group>
+      )}
     </Paper>
   );
 }
