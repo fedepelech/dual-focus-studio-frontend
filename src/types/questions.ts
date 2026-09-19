@@ -28,12 +28,12 @@ export interface QuestionResponse {
   textValue?: string;
 }
 
-export const Zone = {
-  CABA: 'CABA',
-  GBA: 'GBA'
-} as const;
-
-export type Zone = typeof Zone[keyof typeof Zone];
+export interface BarrioConfig {
+  id: string;
+  name: string;
+  isEnabled: boolean;
+  price: number;
+}
 
 export const PropertyType = {
   CASA: 'CASA',

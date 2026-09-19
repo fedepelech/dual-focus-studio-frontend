@@ -3,8 +3,8 @@ import { Stepper, Button, Group, TextInput, Textarea, Stack, Title, Paper, Loadi
 import { notifications } from '@mantine/notifications';
 import api from '../api/client';
 import { EMAIL_REGEX } from './types';
-import type { Question, QuestionResponse } from '../types/questions';
-import { Zone, PropertyType } from '../types/questions';
+import type { Question, QuestionResponse, BarrioConfig } from '../types/questions';
+import { PropertyType } from '../types/questions';
 import { DynamicQuestionField } from './DynamicQuestionField';
 import { OrderPriceSummary, calculateOrderPrice } from './OrderPriceSummary';
 
@@ -15,12 +15,6 @@ const STEP_INMUEBLE = 1;
 const STEP_CONTACTO = 3;
 const STEP_RESUMEN = 4;
 const TOTAL_STEPS = 5;
-
-// Etiquetas para los tipos de zona y propiedad
-const ZONE_OPTIONS = [
-  { value: Zone.CABA, label: 'CABA' },
-  { value: Zone.GBA, label: 'GBA' },
-];
 
 const PROPERTY_TYPE_OPTIONS = [
   { value: PropertyType.CASA, label: 'Casa' },
@@ -35,18 +29,17 @@ export function OrderForm() {
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [barrios, setBarrios] = useState<BarrioConfig[]>([]);
   const [formData, setFormData] = useState({
     serviceIds: [] as string[],
     name: '',
     email: '',
     address: '',
     details: '',
-    zone: '' as Zone | '',
+    barrio: '',
     propertyType: '' as PropertyType | '',
-    gbaSubzone: '',
     responses: [] as QuestionResponse[],
   });
-  const [gbaSubzones, setGbaSubzones] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -74,20 +67,16 @@ export function OrderForm() {
   }, [formData.serviceIds]);
 
   useEffect(() => {
-    if (formData.zone === Zone.GBA) {
-      const fetchSubzones = async () => {
-        try {
-          const res = await api.get('/zones/gba-subzones?onlyEnabled=true');
-          setGbaSubzones(res.data);
-        } catch (error) {
-          console.error('Error fetching subzones:', error);
-        }
-      };
-      fetchSubzones();
-    } else {
-      setFormData(prev => ({ ...prev, gbaSubzone: '' }));
-    }
-  }, [formData.zone]);
+    const fetchBarrios = async () => {
+      try {
+        const res = await api.get('/barrios?onlyEnabled=true');
+        setBarrios(res.data);
+      } catch (error) {
+        console.error('Error fetching barrios:', error);
+      }
+    };
+    fetchBarrios();
+  }, []);
 
   const isQuestionVisible = (q: Question) => {
     if (!q.dependsOnOptionId) return true;
@@ -104,23 +93,20 @@ export function OrderForm() {
       return;
     }
     if (active === STEP_INMUEBLE) {
-      const isSubzoneBlocked = formData.zone === Zone.GBA &&
-        formData.gbaSubzone &&
-        gbaSubzones.find(z => z.name === formData.gbaSubzone)?.isEnabled === false;
-
-      if (!formData.zone || !formData.propertyType || !formData.address || (formData.zone === Zone.GBA && !formData.gbaSubzone)) {
+      if (!formData.barrio || !formData.propertyType || !formData.address) {
         notifications.show({
           title: 'Atención',
-          message: 'Por favor, completa todos los datos del inmueble.',
+          message: 'Por favor, completa todos los datos del inmueble (dirección, barrio y tipo de inmueble).',
           color: 'yellow',
         });
         return;
       }
 
-      if (isSubzoneBlocked) {
+      const isBarrioBlocked = barrios.find(b => b.name === formData.barrio)?.isEnabled === false;
+      if (isBarrioBlocked) {
         notifications.show({
           title: 'Sin cobertura',
-          message: 'Lamentablemente no prestamos servicio en la subzona seleccionada actualmente.',
+          message: 'Lamentablemente no prestamos servicio en el barrio seleccionado actualmente.',
           color: 'red',
         });
         return;
@@ -173,16 +159,22 @@ export function OrderForm() {
       });
       const userId = userRes.data.id;
 
-      const { total } = calculateOrderPrice(services, formData.serviceIds, questions, formData.responses);
+      const { total } = calculateOrderPrice(
+        services,
+        formData.serviceIds,
+        questions,
+        formData.responses,
+        formData.barrio,
+        barrios,
+      );
 
       await api.post('/orders', {
         address: formData.address,
         details: formData.details,
-        zone: formData.zone,
+        barrio: formData.barrio,
         propertyType: formData.propertyType,
         customerId: userId,
         serviceIds: formData.serviceIds,
-        gbaSubzone: formData.gbaSubzone,
         totalPrice: total,
         responses: formData.responses.map((r: QuestionResponse) => ({
           questionId: r.questionId,
@@ -209,7 +201,6 @@ export function OrderForm() {
     }
   };
 
-  const getZoneLabel = (zone: string) => ZONE_OPTIONS.find(z => z.value === zone)?.label || zone;
   const getPropertyTypeLabel = (type: string) => PROPERTY_TYPE_OPTIONS.find(p => p.value === type)?.label || type;
   const selectedServices = services.filter(s => formData.serviceIds.includes(s.id));
   const hasPlanos = selectedServices.some(s => s.category?.toUpperCase() === 'PLANOS');
@@ -221,8 +212,8 @@ export function OrderForm() {
       formData.serviceIds,
       questions,
       formData.responses,
-      formData.zone === Zone.GBA ? formData.gbaSubzone : undefined,
-      gbaSubzones,
+      formData.barrio,
+      barrios,
     );
 
     return (
@@ -244,8 +235,8 @@ export function OrderForm() {
               <Text size="sm" fw={500}>{formData.address}</Text>
             </Stack>
             <Stack gap={2}>
-              <Text size="xs" c="dimmed">Zona</Text>
-              <Text size="sm" fw={500}>{getZoneLabel(formData.zone)} {formData.gbaSubzone && `(${formData.gbaSubzone})`}</Text>
+              <Text size="xs" c="dimmed">Barrio / Ubicación</Text>
+              <Text size="sm" fw={500}>{formData.barrio}</Text>
             </Stack>
             <Stack gap={2}>
               <Text size="xs" c="dimmed">Tipo de inmueble</Text>
@@ -314,7 +305,7 @@ export function OrderForm() {
             onStepClick={(step) => {
               if (step > active) {
                 if (active === STEP_SERVICIO && formData.serviceIds.length === 0) return;
-                if (active === STEP_INMUEBLE && (!formData.zone || !formData.propertyType || !formData.address)) return;
+                if (active === STEP_INMUEBLE && (!formData.barrio || !formData.propertyType || !formData.address)) return;
                 if (active === STEP_CONTACTO && (!formData.name || !EMAIL_REGEX.test(formData.email))) return;
               }
               setActive(step);
@@ -374,20 +365,21 @@ export function OrderForm() {
               <Stack mt="md">
                 <Title order={4}>Contanos sobre la propiedad</Title>
                 <TextInput label="Dirección" required value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-                <Select label="Zona" required data={ZONE_OPTIONS} value={formData.zone} onChange={(val) => setFormData({ ...formData, zone: val as Zone })} />
+                <Select
+                  label="Barrio / Ubicación"
+                  placeholder="Seleccioná tu barrio (CABA o San Isidro)"
+                  required
+                  searchable
+                  clearable
+                  nothingFoundMessage="No se encontró el barrio"
+                  data={barrios.map(b => ({
+                    value: b.name,
+                    label: b.price > 0 ? `${b.name} (+$${b.price.toLocaleString()})` : b.name,
+                  }))}
+                  value={formData.barrio}
+                  onChange={(val) => setFormData({ ...formData, barrio: val || '' })}
+                />
                 <Select label="Tipo de inmueble" required data={PROPERTY_TYPE_OPTIONS} value={formData.propertyType} onChange={(val) => setFormData({ ...formData, propertyType: val as PropertyType })} />
-                {formData.zone === Zone.GBA && (
-                  <Stack gap={4}>
-                    <Text size="xs" c="dimmed">Los costos pueden variar según la zona.</Text>
-                    <Select
-                      label="Partido / Subzona GBA"
-                      required
-                      data={gbaSubzones.filter(z => z.isEnabled !== false).map(z => ({ value: z.name, label: z.name }))}
-                      value={formData.gbaSubzone}
-                      onChange={(val) => setFormData({ ...formData, gbaSubzone: val || '' })}
-                    />
-                  </Stack>
-                )}
                 <Textarea label="Detalles adicionales" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
                 {questions.filter(q => q.displaySection === 1 && isQuestionVisible(q)).map(q => (
                   <DynamicQuestionField key={q.id} question={q} value={formData.responses.find(r => r.questionId === q.id)} onChange={handleResponseChange} hasPlanos={hasPlanos} hasFotoOrVideo={hasFotoOrVideo} />
@@ -427,8 +419,8 @@ export function OrderForm() {
               selectedServiceIds={formData.serviceIds}
               questions={questions}
               responses={formData.responses}
-              selectedSubzone={formData.zone === Zone.GBA ? formData.gbaSubzone : undefined}
-              subzonesList={gbaSubzones}
+              selectedBarrio={formData.barrio}
+              barriosList={barrios}
             />
           </Grid.Col>
         )}

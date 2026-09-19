@@ -156,7 +156,7 @@ export function AdminLayout() {
           onClick={() => navigate('/admin/faq')}
         />
         <NavLink
-          label="Gestionar Zonas GBA"
+          label="Gestionar Barrios"
           leftSection={<MapPin size={16} />}
           active={location.pathname === '/admin/zones'}
           onClick={() => navigate('/admin/zones')}

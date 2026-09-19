@@ -27,10 +27,10 @@ interface OrderPriceSummaryProps {
   questions: Question[];
   /** Respuestas del usuario */
   responses: QuestionResponse[];
-  /** Subzona GBA seleccionada */
-  selectedSubzone?: string;
-  /** Lista de subzonas GBA configuradas */
-  subzonesList?: { name: string; extraPrice?: number }[];
+  /** Barrio / ubicación seleccionada */
+  selectedBarrio?: string;
+  /** Lista de barrios configurados con su precio */
+  barriosList?: { name: string; price?: number }[];
 }
 
 /**
@@ -42,8 +42,8 @@ export function calculateOrderPrice(
   selectedServiceIds: string[],
   questions: Question[],
   responses: QuestionResponse[],
-  selectedSubzone?: string,
-  subzonesList?: { name: string; extraPrice?: number }[],
+  selectedBarrio?: string,
+  barriosList?: { name: string; price?: number }[],
 ): { items: PriceLineItem[]; total: number } {
   const items: PriceLineItem[] = [];
 
@@ -115,13 +115,13 @@ export function calculateOrderPrice(
     }
   }
 
-  // 4. Recargo por subzona de GBA
-  if (selectedSubzone && subzonesList && subzonesList.length > 0) {
-    const subzone = subzonesList.find(s => s.name === selectedSubzone);
-    if (subzone && subzone.extraPrice && subzone.extraPrice > 0) {
+  // 4. Precio individual por barrio / ubicación
+  if (selectedBarrio && barriosList && barriosList.length > 0) {
+    const barrio = barriosList.find(b => b.name === selectedBarrio);
+    if (barrio && barrio.price && barrio.price > 0) {
       items.push({
-        label: `Recargo por zona (${subzone.name})`,
-        amount: subzone.extraPrice,
+        label: `Ubicación: ${barrio.name}`,
+        amount: barrio.price,
         type: 'adicional',
       });
     }
@@ -135,8 +135,8 @@ export function calculateOrderPrice(
  * Componente visual que muestra el resumen de precio en tiempo real.
  * Se integra en el formulario de pedido.
  */
-export function OrderPriceSummary({ services, selectedServiceIds, questions, responses, selectedSubzone, subzonesList }: OrderPriceSummaryProps) {
-  const { items, total } = calculateOrderPrice(services, selectedServiceIds, questions, responses, selectedSubzone, subzonesList);
+export function OrderPriceSummary({ services, selectedServiceIds, questions, responses, selectedBarrio, barriosList }: OrderPriceSummaryProps) {
+  const { items, total } = calculateOrderPrice(services, selectedServiceIds, questions, responses, selectedBarrio, barriosList);
 
   // No mostrar si no hay servicios seleccionados
   if (selectedServiceIds.length === 0) return null;

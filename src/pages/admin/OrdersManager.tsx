@@ -19,8 +19,7 @@ interface Order {
   status: string;
   address: string;
   propertySize?: string;
-  zone?: string;
-  gbaSubzone?: string;
+  barrio?: string;
   propertyType?: string;
   roomCount?: number;
   amenities?: string;
@@ -182,10 +181,7 @@ export function OrdersManager() {
                     </Group>
                   </Table.Td>
                   <Table.Td>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={500}>{order.zone || 'CABA'}</Text>
-                      {order.gbaSubzone && <Text size="xs" c="dimmed">{order.gbaSubzone}</Text>}
-                    </Stack>
+                    <Text size="xs" fw={500}>{order.barrio || '-'}</Text>
                   </Table.Td>
                   <Table.Td>
                     <Badge color={getStatusColor(order.status)} leftSection={getStatusIcon(order.status)} variant="light">
@@ -349,17 +345,11 @@ export function OrdersManager() {
                     <Text size="sm" fw={500}>{selectedOrder.propertyType || '-'}</Text>
                   </div>
                   <div>
-                    <Text size="xs" c="dimmed">Zona Principal</Text>
-                    <Badge variant="outline" color={selectedOrder.zone === 'GBA' ? 'orange' : 'cyan'}>
-                      {selectedOrder.zone || 'CABA'}
+                    <Text size="xs" c="dimmed">Barrio / Ubicación</Text>
+                    <Badge variant="light" color="blue">
+                      {selectedOrder.barrio || 'No especificado'}
                     </Badge>
                   </div>
-                  {selectedOrder.gbaSubzone && (
-                    <div>
-                      <Text size="xs" c="dimmed">Partido / Subzona GBA</Text>
-                      <Text size="sm" fw={600} c="dark.4">{selectedOrder.gbaSubzone}</Text>
-                    </div>
-                  )}
                   {selectedOrder.propertySize && (
                     <div>
                       <Text size="xs" c="dimmed">Superficie</Text>

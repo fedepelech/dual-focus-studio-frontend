@@ -24,7 +24,9 @@ export function AdminLogin() {
   const { login } = useAuth();
   const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/admin/dashboard';
+    const from = (location.state as any)?.from?.pathname || '/admin/dashboard';
+  const queryParams = new URLSearchParams(location.search);
+  const isExpired = queryParams.get('expired') === 'true';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +60,12 @@ export function AdminLogin() {
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
         <form onSubmit={handleSubmit}>
           <Stack>
+            {isExpired && !error && (
+              <Alert icon={<AlertCircle size={16} />} title="Sesión expirada" color="yellow">
+                Tu sesión ha expirado por inactividad. Por favor, volvé a ingresar tus credenciales.
+              </Alert>
+            )}
+
             {error && (
               <Alert icon={<AlertCircle size={16} />} title="Error" color="red">
                 {error}
